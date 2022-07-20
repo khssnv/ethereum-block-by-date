@@ -1,6 +1,6 @@
-const moment = require('moment');
+import moment, { isMoment, unix } from 'moment';
 
-module.exports = class {
+export default class {
     constructor(web3) {
         this.web3 = typeof web3.eth != 'undefined' ? web3 : { eth: web3 };
         this.checkedBlocks = {};
@@ -15,12 +15,12 @@ module.exports = class {
     }
 
     async getDate(date, after = true, refresh = false) {
-        if (!moment.isMoment(date)) date = moment(date).utc();
+        if (!isMoment(date)) date = moment(date).utc();
         if (typeof this.firstBlock == 'undefined' || typeof this.latestBlock == 'undefined' || typeof this.blockTime == 'undefined' || refresh) await this.getBoundaries();
-        if (date.isBefore(moment.unix(this.firstBlock.timestamp))) return this.returnWrapper(date.format(), 1);
-        if (date.isSameOrAfter(moment.unix(this.latestBlock.timestamp))) return this.returnWrapper(date.format(), this.latestBlock.number);
+        if (date.isBefore(unix(this.firstBlock.timestamp))) return this.returnWrapper(date.format(), 1);
+        if (date.isSameOrAfter(unix(this.latestBlock.timestamp))) return this.returnWrapper(date.format(), this.latestBlock.number);
         this.checkedBlocks[date.unix()] = [];
-        let predictedBlock = await this.getBlockWrapper(Math.ceil(date.diff(moment.unix(this.firstBlock.timestamp), 'seconds') / this.blockTime));
+        let predictedBlock = await this.getBlockWrapper(Math.ceil(date.diff(unix(this.firstBlock.timestamp), 'seconds') / this.blockTime));
         return this.returnWrapper(date.format(), await this.findBetter(date, predictedBlock, after));
     }
 
@@ -37,7 +37,7 @@ module.exports = class {
 
     async findBetter(date, predictedBlock, after, blockTime = this.blockTime) {
         if (await this.isBetterBlock(date, predictedBlock, after)) return predictedBlock.number;
-        let difference = date.diff(moment.unix(predictedBlock.timestamp), 'seconds');
+        let difference = date.diff(unix(predictedBlock.timestamp), 'seconds');
         let skip = Math.ceil(difference / (blockTime == 0 ? 1 : blockTime));
         if (skip == 0) skip = difference < 0 ? -1 : 1;
         let nextPredictedBlock = await this.getBlockWrapper(this.getNextBlock(date, predictedBlock.number, skip));
@@ -49,15 +49,15 @@ module.exports = class {
     }
 
     async isBetterBlock(date, predictedBlock, after) {
-        let blockTime = moment.unix(predictedBlock.timestamp);
+        let blockTime = unix(predictedBlock.timestamp);
         if (after) {
             if (blockTime.isBefore(date)) return false;
             let previousBlock = await this.getBlockWrapper(predictedBlock.number - 1);
-            if (blockTime.isSameOrAfter(date) && moment.unix(previousBlock.timestamp).isBefore(date)) return true;
+            if (blockTime.isSameOrAfter(date) && unix(previousBlock.timestamp).isBefore(date)) return true;
         } else {
             if (blockTime.isSameOrAfter(date)) return false;
             let nextBlock = await this.getBlockWrapper(predictedBlock.number + 1);
-            if (blockTime.isBefore(date) && moment.unix(nextBlock.timestamp).isSameOrAfter(date)) return true;
+            if (blockTime.isBefore(date) && unix(nextBlock.timestamp).isSameOrAfter(date)) return true;
         }
         return false;
     }

@@ -31,6 +31,7 @@
 		"prettier": "prettier src --write",
 		"style": "yarn lint && yarn prettier"
 	},
+	"type": "module",
 	"devDependencies": {
 		"@babel/cli": "^7.17.6",
 		"@babel/core": "^7.17.8",
